@@ -67,6 +67,34 @@ function downloadFile(filename, content, mimeType) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function updatePermalink() {
+  const url = new URL(window.location.href);
+  const params = new URLSearchParams();
+  params.set('p', getElement('prime').value);
+  params.set('k', getElement('k').value);
+  params.set('r', getElement('range').value);
+  params.set('s', getElement('filtration').value);
+  url.search = params;
+  window.history.replaceState(null, '', url);
+}
+
+function restoreSettingsFromPermalink() {
+  const params = new URLSearchParams(window.location.search);
+  const settings = [
+    ['p', 'prime'],
+    ['k', 'k'],
+    ['r', 'range'],
+    ['s', 'filtration']
+  ];
+
+  for (const [key, id] of settings) {
+    const value = params.get(key);
+    if (value !== null && /^\d+$/.test(value)) {
+      getElement(id).value = value;
+    }
+  }
+}
+
 function startCalculation(event) {
   event.preventDefault();
   finishCalculation();
@@ -78,6 +106,7 @@ function startCalculation(event) {
   try {
     const prime = validatePrime(Number(getElement('prime').value));
     const limits = bounds(k, range, filtration);
+    updatePermalink();
     renderProductControls(prime);
 
     // Keep stable (stem, s, t) and displayed (q, s) coordinates in the export.
@@ -328,7 +357,7 @@ function drawChart() {
   getElement('chart').replaceChildren(svg);
 }
 
-// Wire up the controls, then compute the default inputs on first load.
+// Wire up the controls, restore any shared settings, then compute on first load.
 getElement('settings').addEventListener('submit', startCalculation);
 getElement('stop').onclick = stopCalculation;
 window.addEventListener('resize', drawChart);
@@ -351,4 +380,5 @@ getElement('svg').onclick = () => downloadFile(
   'image/svg+xml'
 );
 
+restoreSettingsFromPermalink();
 getElement('settings').requestSubmit();
